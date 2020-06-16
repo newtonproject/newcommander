@@ -1,0 +1,9 @@
+wallet/*
+debug.test
+debug
+.idea/*
+.vscode/*
+newcommander
+newcommander.exe
+config.toml
+error.log
