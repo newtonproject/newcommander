@@ -27,7 +27,7 @@ To get from gitlab via `go get`, this will get source and install dependens(cobr
 install command
 
 ```bash
-go get github.com/newtonproject/newcommander
+git clone https://github.com/newtonproject/newcommander.git && cd newcommander && make install
 ```
 
 run newcommander
@@ -41,7 +41,7 @@ run newcommander
 install:
 
 ```bash
-go get github.com/newtonproject/newcommander
+git clone https://github.com/newtonproject/newcommander.git && cd newcommander && make install
 ```
 run newcommander
 
@@ -238,7 +238,7 @@ newcommander decode 0xf863820258648252089497549e368acafdcae786bb93d98379f1d1561a
 
 # Decode signed transaction hex string to compress json
 newcommander decode 0xf863820258648252089497549e368acafdcae786bb93d98379f1d1561a298080820802a0768ff39803904e993df858e0d4bbc2d56adf37e804e6804e9e2532d6726c70a4a02e9d8a4cdaf1a8d1b7d99f783162bcd8f0a80084b069f6c69c77f4345c4392f8 --compress
-``` 
+```
 
 ### Batch pay
 ```bash
@@ -267,7 +267,7 @@ newcommander rpc eth_getTransactionReceipt 0xd9f1a3a4c54b6218c848e9a246faa570ea5
 # Get account nonce
 newcommander rpc eth_getTransactionCount 0xc94770007dda54cF92009BFF0dE90c06F603a09f latest
 
-# Get balance 
+# Get balance
 newcommander rpc eth_getBalance 0xc94770007dda54cF92009BFF0dE90c06F603a09f latest
 
 # Get gas limit
