@@ -78,12 +78,6 @@ func (cli *CLI) buildPayCmd() *cobra.Command {
 				return
 			}
 
-			// check pay all
-			if payAll {
-				// cli.tran.Value = big.NewInt(0).Sub(balance, big.NewInt(0).Mul(cli.tran.GasPrice, big.NewInt(0).SetUint64(cli.tran.GasLimit)))
-				cli.tran.Value = balance
-			}
-
 			// update nonce, gasLimit, gasPrice, network from node
 			if err := cli.updateFromNodeCustom(bNonce, bGasPrice, bGasLimit, true); err != nil {
 				fmt.Println(err)
