@@ -54,4 +54,5 @@ func (cli *CLI) buildRootCmd() {
 	// tools
 	rootCmd.AddCommand(cli.buildDecodeCmd()) // decode
 	rootCmd.AddCommand(cli.buildBlockCmd())  // block
+	rootCmd.AddCommand(cli.buildTraceCmd())  // trace
 }
