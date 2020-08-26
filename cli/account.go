@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 
@@ -126,11 +127,42 @@ func (cli *CLI) buildAccountListCmd() *cobra.Command {
 				return
 			}
 
+			pubkey, _ := cmd.Flags().GetBool("pubkey")
+			password := ""
+
 			for _, account := range cli.wallet.Accounts() {
-				fmt.Println(account.Address.Hex())
+				if pubkey {
+					keyJSON, err := cli.wallet.Export(account, password, password)
+					if err != nil {
+						prompt := fmt.Sprintf("Unlocking account %s", account.Address.String())
+						password, err = getPassPhrase(prompt, false)
+						if err != nil {
+							fmt.Println(err)
+							return
+						}
+					}
+					keyJSON, err = cli.wallet.Export(account, password, password)
+					if err != nil {
+						fmt.Println(err)
+						return
+					}
+
+					key, err := keystore.DecryptKey(keyJSON, password)
+					if err != nil {
+						fmt.Println(err)
+						return
+					}
+
+					pub := key.PrivateKey.PublicKey
+					fmt.Println(account.Address.Hex(), hex.EncodeToString(crypto.FromECDSAPub(&pub)[1:]), hex.EncodeToString(crypto.Keccak256(crypto.FromECDSAPub(&pub)[1:])))
+
+				} else {
+					fmt.Println(account.Address.Hex())
+				}
 			}
 		},
 	}
+	accountListCmd.Flags().BoolP("pubkey", "s", false, "Show pub key and keccak256 of pub key")
 
 	return accountListCmd
 }
