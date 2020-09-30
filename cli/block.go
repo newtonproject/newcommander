@@ -1,12 +1,14 @@
 package cli
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -97,6 +99,12 @@ func (cli *CLI) buildBlockListCmd() *cobra.Command {
 			}
 			fmt.Println(latest.Number().String(), address.String())
 
+			showClique, _ := cmd.Flags().GetBool("clique")
+			var (
+				nonceAuthVote = hexutil.MustDecode("0xffffffffffffffff") // Magic nonce number to vote on adding a new signer
+				nonceDropVote = hexutil.MustDecode("0x0000000000000000") // Magic nonce number to vote on removing a signer.
+			)
+
 			for n := big.NewInt(1); n.Cmp(number) < 0; n.Add(n, big.NewInt(1)) {
 				block, err := client.BlockByNumber(ctx, big.NewInt(0).Sub(latest.Number(), n))
 				if err != nil {
@@ -108,12 +116,27 @@ func (cli *CLI) buildBlockListCmd() *cobra.Command {
 					fmt.Println(err)
 					return
 				}
-				fmt.Println(block.Number().String(), address.String())
+				if showClique {
+					if block.Coinbase() != (common.Address{}) {
+						if bytes.Compare(nonceAuthVote, block.Header().Nonce[:]) == 0 {
+							fmt.Println(block.Number().String(), address.String(), "Auth", block.Coinbase().String())
+						} else if bytes.Compare(nonceDropVote, block.Header().Nonce[:]) == 0 {
+							fmt.Println(block.Number().String(), address.String(), "Drop", block.Coinbase().String())
+						}
+					} else {
+						fmt.Println(block.Number().String(), address.String())
+					}
+
+				} else {
+					fmt.Println(block.Number().String(), address.String())
+				}
 			}
 
 			return
 		},
 	}
+
+	cmd.Flags().Bool("clique", false, "show clique proposals")
 
 	return cmd
 }
