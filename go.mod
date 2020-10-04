@@ -17,7 +17,6 @@ require (
 	github.com/rjeczalik/notify v0.9.2 // indirect
 	github.com/robertkrimen/otto v0.0.0-20191219234010-c382bd3c16ff // indirect
 	github.com/rs/cors v1.7.0 // indirect
-	github.com/sirupsen/logrus v1.6.0
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/viper v1.7.0
 	github.com/syndtr/goleveldb v1.0.0 // indirect
