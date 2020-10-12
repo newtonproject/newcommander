@@ -231,13 +231,16 @@ newcommander sign tx.txt --out tx.sign
 newcommander submit tx.sign
 ```
 
-### Decode singed transaction
+### Decode transaction
 ```bash
 # Decode signed transaction hex string to json
 newcommander decode 0xf863820258648252089497549e368acafdcae786bb93d98379f1d1561a298080820802a0768ff39803904e993df858e0d4bbc2d56adf37e804e6804e9e2532d6726c70a4a02e9d8a4cdaf1a8d1b7d99f783162bcd8f0a80084b069f6c69c77f4345c4392f8
 
 # Decode signed transaction hex string to compress json
 newcommander decode 0xf863820258648252089497549e368acafdcae786bb93d98379f1d1561a298080820802a0768ff39803904e993df858e0d4bbc2d56adf37e804e6804e9e2532d6726c70a4a02e9d8a4cdaf1a8d1b7d99f783162bcd8f0a80084b069f6c69c77f4345c4392f8 --compress
+
+# Decode unsigned transaction hex string to json
+newcommander decode 0xe3820258648252089497549e368acafdcae786bb93d98379f1d1561a2980808203ef8080 --rlp
 ```
 
 ### Batch pay
