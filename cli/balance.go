@@ -18,13 +18,16 @@ func (cli *CLI) buildBalanceCmd() *cobra.Command {
 		Args:                  cobra.MinimumNArgs(0),
 		DisableFlagsInUseLine: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			cli.showBalance(cmd, args, false)
+			nosum, _ := cmd.Flags().GetBool("nosum")
+
+			cli.showBalance(cmd, args, !nosum)
 		},
 	}
 
 	cmd.Flags().StringP("unit", "u", "", fmt.Sprintf("unit for balance. %s.", UnitString))
 	cmd.Flags().BoolP("safe", "s", false, "enable safe mode to check balance (force use the block 3 block heights less than the latest)")
 	cmd.Flags().StringP("number", "n", "latest", `the integer block number, or the string "latest", "earliest" or "pending"`)
+	cmd.Flags().Bool("nosum", false,   `disable show sum info`)
 
 	return cmd
 }
