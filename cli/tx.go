@@ -9,7 +9,7 @@ import (
 
 	ethereum "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/console"
+	prompt2 "github.com/ethereum/go-ethereum/console/prompt"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/rpc"
@@ -74,7 +74,8 @@ func (cli *CLI) buildBuildCmd() *cobra.Command {
 				outStr, err = cmd.Flags().GetString("out")
 			} else {
 				prompt := fmt.Sprintf("Enter file to save transaction (default: %s): ", defaultOutStr)
-				outStr, err = console.Stdin.PromptInput(prompt)
+				outStr, err = prompt2.Stdin.PromptInput(prompt)
+
 			}
 			if err != nil {
 				fmt.Println("Error:", err)
@@ -305,7 +306,7 @@ func (cli *CLI) signTxAndSave(filepath string) {
 		fmt.Println(err)
 		return
 	}
-	dataHex := common.ToHex(data)
+	dataHex := common.Bytes2Hex(data) // common.ToHex(data)
 	fmt.Printf("Signed Transaction: %s\n", dataHex)
 
 	if err := saveStringToFile(dataHex, filepath); err != nil {

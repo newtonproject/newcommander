@@ -11,7 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/console"
+	prompt2 "github.com/ethereum/go-ethereum/console/prompt"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -326,7 +326,7 @@ func (cli *CLI) buildAccountImportCmd() *cobra.Command {
 		DisableFlagsInUseLine: true,
 		Hidden:                true,
 		Run: func(cmd *cobra.Command, args []string) {
-			hexkey, err := console.Stdin.PromptPassword("Enter private key: ")
+			hexkey, err := prompt2.Stdin.PromptPassword("Enter private key: ")
 			if err != nil {
 				fmt.Println(err)
 				return
@@ -414,7 +414,7 @@ func (cli *CLI) buildAccountExportCmd() *cobra.Command {
 				return
 			}
 
-			fmt.Println(common.ToHex(key.PrivateKey.D.Bytes()))
+			fmt.Println(common.Bytes2Hex(key.PrivateKey.D.Bytes()))
 
 		},
 	}

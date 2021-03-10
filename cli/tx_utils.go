@@ -11,7 +11,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/console"
+	prompt2 "github.com/ethereum/go-ethereum/console/prompt"
 	"github.com/spf13/cobra"
 )
 
@@ -197,7 +197,7 @@ func (cli *CLI) applyTxGuide(offline bool) error {
 			} else {
 				prompt = fmt.Sprintf("Enter from address who sign tx (default: %s): ", cli.tran.From.String())
 			}
-			fromAddressStr, err := console.Stdin.PromptInput(prompt)
+			fromAddressStr, err := prompt2.Stdin.PromptInput(prompt)
 			if err != nil {
 				return fmt.Errorf("Error: get \"from\" error")
 			}
@@ -230,7 +230,7 @@ func (cli *CLI) applyTxGuide(offline bool) error {
 			} else {
 				prompt = fmt.Sprintf("Enter to address (default: %s): ", cli.tran.To.String())
 			}
-			toAddressStr, err := console.Stdin.PromptInput(prompt)
+			toAddressStr, err := prompt2.Stdin.PromptInput(prompt)
 			if err != nil {
 				return fmt.Errorf("Error: get \"to\" error")
 			}
@@ -264,7 +264,7 @@ func (cli *CLI) applyTxGuide(offline bool) error {
 			} else {
 				prompt = fmt.Sprintf("Enter unit for amount (%s or %s, default %s): ", UnitETH, UnitWEI, cli.tran.Unit)
 			}
-			unit, err := console.Stdin.PromptInput(prompt)
+			unit, err := prompt2.Stdin.PromptInput(prompt)
 			if err != nil {
 				fmt.Println("Error: get \"unit\" error")
 				return err
@@ -296,7 +296,7 @@ func (cli *CLI) applyTxGuide(offline bool) error {
 			}
 			prompt = fmt.Sprintf("Enter amount to pay in %s (default: %s): ", cli.tran.Unit,
 				getWeiAmountTextByUnit(cli.tran.Value, cli.tran.Unit))
-			amountStr, err := console.Stdin.PromptInput(prompt)
+			amountStr, err := prompt2.Stdin.PromptInput(prompt)
 			if err != nil {
 				fmt.Println("PromptInput err:", err)
 				return err
@@ -335,7 +335,7 @@ func (cli *CLI) applyTxGuide(offline bool) error {
 			} else {
 				prompt = fmt.Sprintf("Enter text message (default is empty): ")
 			}
-			dataStr, err := console.Stdin.PromptInput(prompt)
+			dataStr, err := prompt2.Stdin.PromptInput(prompt)
 			if err != nil {
 				return err
 			}
@@ -359,7 +359,7 @@ func (cli *CLI) applyTxGuide(offline bool) error {
 
 	// get nonce
 	prompt = fmt.Sprintf("Enter nonce of from address (default: %d): ", cli.tran.Nonce)
-	nonceStr, err := console.Stdin.PromptInput(prompt)
+	nonceStr, err := prompt2.Stdin.PromptInput(prompt)
 	if err != nil {
 		return err
 	}
@@ -376,7 +376,7 @@ func (cli *CLI) applyTxGuide(offline bool) error {
 		cli.tran.GasPrice = big.NewInt(1)
 	}
 	prompt = fmt.Sprintf("Enter gasPrice (default: %s WEI): ", cli.tran.GasPrice.String())
-	gasPriceStr, err := console.Stdin.PromptInput(prompt)
+	gasPriceStr, err := prompt2.Stdin.PromptInput(prompt)
 	if err != nil {
 		fmt.Println("get gasPrice error")
 		return err
@@ -397,7 +397,7 @@ func (cli *CLI) applyTxGuide(offline bool) error {
 		cli.tran.GasLimit = 21000
 	}
 	prompt = fmt.Sprintf("Enter gasLimit (default: %d): ", cli.tran.GasLimit)
-	gasLimitStr, err := console.Stdin.PromptInput(prompt)
+	gasLimitStr, err := prompt2.Stdin.PromptInput(prompt)
 	if err != nil {
 		return fmt.Errorf("get gasLimit error")
 	}
@@ -414,7 +414,7 @@ func (cli *CLI) applyTxGuide(offline bool) error {
 		cli.tran.NetworkID = DefaultChainID
 	}
 	prompt = fmt.Sprintf("Enter ChainID (default: %s): ", cli.tran.NetworkID.String())
-	networkIDStr, err := console.Stdin.PromptInput(prompt)
+	networkIDStr, err := prompt2.Stdin.PromptInput(prompt)
 	if err != nil {
 		return err
 	}
