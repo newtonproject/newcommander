@@ -59,7 +59,7 @@ func (cli *CLI) buildDecodeCmd() *cobra.Command {
 			compress, _ := cmd.Flags().GetBool("compress")
 
 			tx := new(types.Transaction)
-			err := rlp.DecodeBytes(b, tx)
+			err := tx.UnmarshalBinary(b)
 			if err != nil {
 				fmt.Println("Decode Bytes Error: ", err)
 				return
@@ -81,47 +81,110 @@ func (cli *CLI) buildDecodeCmd() *cobra.Command {
 				return
 			}
 
-			var signer types.Signer = types.FrontierSigner{}
-			if tx.Protected() {
-				signer = types.NewEIP155Signer(tx.ChainId())
-			}
+			signer := types.NewLondonSigner(tx.ChainId())
 			from, err := types.Sender(signer, tx)
 			if err != nil {
 				fmt.Println("Sender Error: ", err)
 				return
 			}
 
-			tx0b, err := rlp.EncodeToBytes([]interface{}{
-				tx.Nonce(),
-				tx.GasPrice(),
-				tx.Gas(),
-				tx.To(),
-				tx.Value(),
-				tx.Data(),
-				tx.ChainId(), uint(0), uint(0),
-			})
+			var tx0b []byte
+			tx0 := new(types.Transaction)
+			switch tx.Type() {
+			case types.LegacyTxType:
+				tx0b, err = rlp.EncodeToBytes([]interface{}{
+					tx.Nonce(),
+					tx.GasPrice(),
+					tx.Gas(),
+					tx.To(),
+					tx.Value(),
+					tx.Data(),
+					tx.ChainId(), uint(0), uint(0),
+				})
+				tx0 = types.NewTx(&types.LegacyTx{
+					Nonce:    tx.Nonce(),
+					GasPrice: tx.GasPrice(),
+					Gas:      tx.Gas(),
+					To:       tx.To(),
+					Value:    tx.Value(),
+					Data:     tx.Data(),
+				})
+			case types.AccessListTxType:
+				tx0b, err = rlp.EncodeToBytes([]interface{}{
+					tx.ChainId(),
+					tx.Nonce(),
+					tx.GasPrice(),
+					tx.Gas(),
+					tx.To(),
+					tx.Value(),
+					tx.Data(),
+					tx.AccessList(),
+				})
+				tx0b = append([]byte{tx.Type()}, tx0b...)
+
+				tx0 = types.NewTx(&types.AccessListTx{
+					ChainID:    tx.ChainId(),
+					Nonce:      tx.Nonce(),
+					GasPrice:   tx.GasPrice(),
+					Gas:        tx.Gas(),
+					To:         tx.To(),
+					Value:      tx.Value(),
+					Data:       tx.Data(),
+					AccessList: tx.AccessList(),
+				})
+			case types.DynamicFeeTxType:
+				tx0b, err = rlp.EncodeToBytes([]interface{}{
+					tx.ChainId(),
+					tx.Nonce(),
+					tx.GasTipCap(),
+					tx.GasFeeCap(),
+					tx.Gas(),
+					tx.To(),
+					tx.Value(),
+					tx.Data(),
+					tx.AccessList(),
+				})
+				tx0 = types.NewTx(&types.DynamicFeeTx{
+					ChainID:    tx.ChainId(),
+					Nonce:      tx.Nonce(),
+					GasTipCap:  tx.GasTipCap(),
+					GasFeeCap:  tx.GasFeeCap(),
+					Gas:        tx.Gas(),
+					To:         tx.To(),
+					Value:      tx.Value(),
+					Data:       tx.Data(),
+					AccessList: tx.AccessList(),
+				})
+			default:
+
+			}
+
 			if err != nil {
 				fmt.Println("tx0 rlp EncodeToBytes error: ", err)
 				return
 			}
-			tx0 := new(types.Transaction)
-			err = rlp.DecodeBytes(tx0b, tx0)
-			if err != nil {
-				fmt.Println("tx0 rlp DecodeBytes error: ", err)
-				return
-			}
+
 			tx0h := signer.Hash(tx0)
 
-			// txData := new(TxData)
-			v, r, s := tx.RawSignatureValues()
+			V, R, S := tx.RawSignatureValues()
+			switch tx.Type() {
+			case types.LegacyTxType:
+				if tx.Protected() {
+					chainIdMul := new(big.Int).Mul(tx.ChainId(), big.NewInt(2))
+					V = new(big.Int).Sub(V, chainIdMul)
+					V.Sub(V, big.NewInt(8))
+				}
 
-			vb := big.NewInt(0).Set(v)
-			if tx.Protected() {
-				chainIdMul := new(big.Int).Mul(tx.ChainId(), big.NewInt(2))
-				vb.Sub(v, chainIdMul)
-				vb.Sub(vb, big.NewInt(8))
+			case types.AccessListTxType:
+				// AL txs are defined to use 0 and 1 as their recovery
+				// id, add 27 to become equivalent to unprotected Homestead signatures.
+				V = new(big.Int).Add(V, big.NewInt(27))
+			case types.DynamicFeeTxType:
+				V = new(big.Int).Add(V, big.NewInt(27))
+			default:
 			}
-			pubkey, err := recoverPublicKey(tx0.Hash(), r, s, vb, true)
+
+			pubkey, err := recoverPublicKey(tx0h, R, S, V, true)
 			if err != nil {
 				fmt.Println("recoverPublicKey error: ", err)
 				return
@@ -144,9 +207,9 @@ func (cli *CLI) buildDecodeCmd() *cobra.Command {
 				Nonce:             tx.Nonce(),
 				Price:             tx.GasPrice(),
 				GasLimit:          tx.Gas(),
-				V:                 hexutil.Encode(v.Bytes()),
-				R:                 hexutil.Encode(r.Bytes()),
-				S:                 hexutil.Encode(s.Bytes()),
+				V:                 hexutil.Encode(V.Bytes()),
+				R:                 hexutil.Encode(R.Bytes()),
+				S:                 hexutil.Encode(S.Bytes()),
 				Hash:              tx.Hash(),
 				ChainID:           tx.ChainId(),
 				Raw:               hexutil.Encode(b),
