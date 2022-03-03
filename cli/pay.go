@@ -46,6 +46,16 @@ func (cli *CLI) buildPayCmd() *cobra.Command {
 				cli.tran.GasPrice = big.NewInt(0).SetUint64(price)
 				bGasPrice = false
 			}
+			bGasPriceTip := true
+			if cmd.Flags().Changed("priceTip") {
+				priceTip, err := cmd.Flags().GetUint64("priceTip")
+				if err != nil {
+					fmt.Println("price get error: ", err)
+					return
+				}
+				cli.tran.GasPriceTip = big.NewInt(0).SetUint64(priceTip)
+				bGasPriceTip = false
+			}
 
 			bGasLimit := true
 			if cmd.Flags().Changed("gas") {
@@ -79,7 +89,7 @@ func (cli *CLI) buildPayCmd() *cobra.Command {
 			}
 
 			// update nonce, gasLimit, gasPrice, network from node
-			if err := cli.updateFromNodeCustom(bNonce, bGasPrice, bGasLimit, true); err != nil {
+			if err := cli.updateFromNodeCustom(bNonce, bGasPrice, bGasPriceTip, bGasLimit, true); err != nil {
 				fmt.Println(err)
 				return
 			}
@@ -136,6 +146,7 @@ func (cli *CLI) buildPayCmd() *cobra.Command {
 	cmd.Flags().String("data", "", "custom data message (use quotes if there are spaces)")
 	cmd.Flags().Uint64P("gas", "g", 21000, "the gas provided for the transaction execution")
 	cmd.Flags().Uint64P("price", "p", 1, "the gasPrice used for each paid gas (unit in WEI)")
+	cmd.Flags().Uint64P("priceTip", "t", 0, "the gasPriceTip used for each paid gas after 1559 (unit in WEI)")
 	cmd.Flags().Uint64P("nonce", "n", 0, "the number of nonce")
 
 	return cmd
@@ -249,7 +260,27 @@ func (cli *CLI) signTx() (*types.Transaction, error) {
 	if cli.tran == nil {
 		return nil, errCliTranNil
 	}
-	tx := types.NewTransaction(cli.tran.Nonce, cli.tran.To, cli.tran.Value, cli.tran.GasLimit, cli.tran.GasPrice, cli.tran.Data)
+	var tx *types.Transaction
+	if cli.tran.GasPriceTip != nil {
+		tx = types.NewTx(&types.DynamicFeeTx{
+			Nonce:     cli.tran.Nonce,
+			GasTipCap: cli.tran.GasPriceTip,
+			GasFeeCap: cli.tran.GasPrice,
+			Gas:       cli.tran.GasLimit,
+			To:        &cli.tran.To,
+			Value:     cli.tran.Value,
+			Data:      cli.tran.Data,
+		})
+	} else {
+		tx = types.NewTx(&types.LegacyTx{
+			Nonce:    cli.tran.Nonce,
+			GasPrice: cli.tran.GasPrice,
+			Gas:      cli.tran.GasLimit,
+			To:       &cli.tran.To,
+			Value:    cli.tran.Value,
+			Data:     cli.tran.Data,
+		})
+	}
 	signTx, err := cli.wallet.SignTx(accounts.Account{Address: cli.tran.From}, tx, cli.tran.NetworkID)
 	if err != nil {
 		return nil, err
@@ -287,6 +318,33 @@ func (cli *CLI) getGasPrice() (*big.Int, error) {
 	return cli.client.SuggestGasPrice(context.Background())
 }
 
+func (cli *CLI) getGasPriceTip() (*big.Int, error) {
+	if cli.client == nil {
+		if err := cli.BuildClient(); err != nil {
+			return nil, err
+		}
+	}
+	return cli.client.SuggestGasTipCap(context.Background())
+}
+
+func (cli *CLI) eip1559Enabled() (bool, error) {
+	if cli.client == nil {
+		if err := cli.BuildClient(); err != nil {
+			return false, err
+		}
+	}
+
+	latestBlock, err := cli.client.BlockByNumber(context.Background(), nil)
+	if err != nil {
+		return false, err
+	}
+	if latestBlock.BaseFee() == nil {
+		return false, nil
+	}
+
+	return true, nil
+}
+
 func (cli *CLI) getGasLimit() (uint64, error) {
 	if cli.client == nil {
 		if err := cli.BuildClient(); err != nil {
@@ -313,7 +371,7 @@ func (cli *CLI) getNetworkID() (*big.Int, error) {
 	return cli.client.NetworkID(context.Background())
 }
 
-func (cli *CLI) updateFromNodeCustom(bNonce, bGasPrice, bGasLimit, bNetworkID bool) error {
+func (cli *CLI) updateFromNodeCustom(bNonce, bGasPrice, bGasPriceTip, bGasLimit, bNetworkID bool) error {
 	// get nonce
 	if bNonce {
 		nonce, err := cli.getNonce()
@@ -330,6 +388,17 @@ func (cli *CLI) updateFromNodeCustom(bNonce, bGasPrice, bGasLimit, bNetworkID bo
 			return err
 		}
 		cli.tran.GasPrice = gasPrice
+	}
+
+	// get gasPriceTip
+	if bGasPriceTip {
+		if ok, _ := cli.eip1559Enabled(); ok {
+			gasPriceTip, err := cli.getGasPriceTip()
+			if err != nil {
+				return err
+			}
+			cli.tran.GasPriceTip = gasPriceTip
+		}
 	}
 
 	// get gasLimit
@@ -354,5 +423,5 @@ func (cli *CLI) updateFromNodeCustom(bNonce, bGasPrice, bGasLimit, bNetworkID bo
 }
 
 func (cli *CLI) updateFromNode() error {
-	return cli.updateFromNodeCustom(true, true, true, true)
+	return cli.updateFromNodeCustom(true, true, false, true, true)
 }

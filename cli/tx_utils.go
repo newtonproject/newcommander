@@ -17,16 +17,17 @@ import (
 
 // Transaction for send Transaction
 type Transaction struct {
-	From      common.Address `json:"from"`
-	To        common.Address `json:"to"`
-	Value     *big.Int       `json:"value"`
-	Unit      string         `json:"unit"`
-	Data      []byte         `json:"data"`
-	Nonce     uint64         `json:"nonce"`
-	GasPrice  *big.Int       `json:"gasPrice"`
-	GasLimit  uint64         `json:"gas"`
-	NetworkID *big.Int       `json:"networkID"`
-	Password  string         `json:"password,omitempty"`
+	From        common.Address `json:"from"`
+	To          common.Address `json:"to"`
+	Value       *big.Int       `json:"value"`
+	Unit        string         `json:"unit"`
+	Data        []byte         `json:"data"`
+	Nonce       uint64         `json:"nonce"`
+	GasPrice    *big.Int       `json:"gasPrice"`
+	GasLimit    uint64         `json:"gas"`
+	NetworkID   *big.Int       `json:"networkID"`
+	Password    string         `json:"password,omitempty"`
+	GasPriceTip *big.Int       `json:"gasTips,omitempty"`
 }
 
 func (t Transaction) MarshalJSON() ([]byte, error) {
