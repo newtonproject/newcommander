@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/btcsuite/btcutil v1.0.2
-	github.com/ethereum/go-ethereum v1.10.7
+	github.com/ethereum/go-ethereum v1.10.15
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/viper v1.7.0
