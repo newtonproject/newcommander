@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -141,10 +142,16 @@ func (cli *CLI) buildBlockListCmd() *cobra.Command {
 	return cmd
 }
 
-func sigHash(header *types.Header) (hash common.Hash) {
+// sealHash returns the hash of a block prior to it being sealed.
+func sealHash(header *types.Header) (hash common.Hash) {
 	hasher := sha3.NewLegacyKeccak256()
+	encodeSigHeader(hasher, header)
+	hasher.(crypto.KeccakState).Read(hash[:])
+	return hash
+}
 
-	rlp.Encode(hasher, []interface{}{
+func encodeSigHeader(w io.Writer, header *types.Header) {
+	enc := []interface{}{
 		header.ParentHash,
 		header.UncleHash,
 		header.Coinbase,
@@ -157,12 +164,28 @@ func sigHash(header *types.Header) (hash common.Hash) {
 		header.GasLimit,
 		header.GasUsed,
 		header.Time,
-		header.Extra[:len(header.Extra)-65], // Yes, this will panic if extra is too short
+		header.Extra[:len(header.Extra)-crypto.SignatureLength], // Yes, this will panic if extra is too short
 		header.MixDigest,
 		header.Nonce,
-	})
-	hasher.Sum(hash[:0])
-	return hash
+	}
+	if header.BaseFee != nil {
+		enc = append(enc, header.BaseFee)
+	}
+	// if header.WithdrawalsHash != nil {
+	// 	panic("unexpected withdrawal hash value in clique")
+	// }
+	// if header.ExcessBlobGas != nil {
+	// 	panic("unexpected excess blob gas value in clique")
+	// }
+	// if header.BlobGasUsed != nil {
+	// 	panic("unexpected blob gas used value in clique")
+	// }
+	// if header.ParentBeaconRoot != nil {
+	// 	panic("unexpected parent beacon root value in clique")
+	// }
+	if err := rlp.Encode(w, enc); err != nil {
+		panic("can't encode: " + err.Error())
+	}
 }
 
 // ecrecover extracts the Ethereum account address from a signed header.
@@ -174,7 +197,7 @@ func ecrecover(header *types.Header) (common.Address, error) {
 	signature := header.Extra[len(header.Extra)-65:]
 
 	// Recover the public key and the Ethereum address
-	pubkey, err := crypto.Ecrecover(sigHash(header).Bytes(), signature)
+	pubkey, err := crypto.Ecrecover(sealHash(header).Bytes(), signature)
 	if err != nil {
 		return common.Address{}, err
 	}
